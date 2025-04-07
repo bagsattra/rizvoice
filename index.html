@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>M.Rizwan's AI Voice Studio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 15px;
+      background: #eef2f7;
+    }
+    h1, h2, h3 {
+      color: #333;
+    }
+    .tab-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    .tab-buttons button {
+      flex: 1;
+      padding: 10px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      min-width: 120px;
+    }
+    .tab-buttons button:hover {
+      background: #0056b3;
+    }
+    .section {
+      background: #fff;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      display: none;
+      margin-bottom: 20px;
+    }
+    .section.active {
+      display: block;
+    }
+    form input, form textarea, form select, form button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    form label {
+      font-weight: bold;
+    }
+    form button {
+      background: #28a745;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    form button:hover {
+      background: #218838;
+    }
+    .slider-container {
+      display: flex;
+      align-items: center;
+    }
+    .slider-container input[type=range] {
+      flex: 1;
+    }
+    .slider-container span {
+      margin-left: 10px;
+      font-weight: bold;
+      min-width: 40px;
+      text-align: center;
+    }
+    .history-item {
+      border-bottom: 1px solid #ccc;
+      padding: 8px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .history-item:last-child {
+      border-bottom: none;
+    }
+    .history-item button {
+      background: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+    audio {
+      width: 100%;
+      margin-top: 5px;
+    }
+    /* Loading Popup Style */
+    .loading-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      font-size: 1.5em;
+      z-index: 1000;
+      display: none;
+    }
+    @media(max-width:600px) {
+      body { padding: 10px; }
+      .tab-buttons { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <h1>M.Rizwan's AI Voice Studio</h1>
+  <p>Welcome to M.Rizwan's AI Voice Studio. Create and customize professional text-to-speech audio effortlessly with advanced settings.</p>
+  
+  <div class="tab-buttons">
+    <button onclick="showSection('ttsSection')">Text-to-Speech</button>
+    <button onclick="showSection('cloneSection')">Voice Cloning</button>
+    <button onclick="showSection('customSection')">Custom Voice</button>
+    <button onclick="showSection('historySection')">History</button>
+  </div>
+
+  <!-- Loading Popup -->
+  <div id="loadingPopup" class="loading-popup">
+    Generating voice, please wait...
+  </div>
+
+  <!-- Text-to-Speech Section -->
+  <div id="ttsSection" class="section active">
+    <h2>Text-to-Speech</h2>
+    <form id="ttsForm">
+      <label for="ttsApiKey">API Key</label>
+      <input type="text" id="ttsApiKey" placeholder="Enter your ElevenLabs API key" required 
+             value="sk_20b1a5899d669aed061c48e8242efd55f43abf2445bfd0f3" />
+
+      <label for="ttsText">Text / SSML (Urdu/English)</label>
+      <textarea id="ttsText" rows="4" placeholder="Enter text or SSML here" required></textarea>
+      <div style="text-align:right; font-size:0.9em;">
+        Character Count: <span id="charCount">0</span>
+      </div>
+
+      <!-- Voice Dropdown with Auto Preview -->
+      <label for="ttsVoiceSelect">Select Voice</label>
+      <select id="ttsVoiceSelect" required>
+        <option value="pNInz6obpgDQGcFmaJgB">adam</option>
+        <option value="NOpBlnGInO9m6vDvFkFC">Grandpa Spuds Oxley</option>
+        <option value="N2lVS1w4EtoT3dr4eOWO">cellum</option>
+        <option value="nPczCjzI2devNBz1zQrb">brian</option>
+        <option value="k7nOSUCadIEwB6fdJmbw">Ahmad</option>
+        <option value="qMWiKJnYIpKnTfN3rWDk">Ashar</option>
+      </select>
+
+      <label for="modelId">Model ID</label>
+      <input type="text" id="modelId" value="eleven_monolingual_v1" required />
+
+      <!-- Stability -->
+      <label for="stability">Stability (0 to 1)</label>
+      <div class="slider-container">
+        <input type="range" id="stability" min="0" max="1" step="0.05" value="0.75">
+        <span id="stabilityValue">0.75</span>
+      </div>
+
+      <!-- Similarity Boost -->
+      <label for="similarityBoost">Similarity Boost (0 to 1)</label>
+      <div class="slider-container">
+        <input type="range" id="similarityBoost" min="0" max="1" step="0.05" value="0.75">
+        <span id="similarityValue">0.75</span>
+      </div>
+
+      <!-- Style / Expression (Hypothetical) -->
+      <label for="style">Style / Expression (0 to 1)</label>
+      <div class="slider-container">
+        <input type="range" id="style" min="0" max="1" step="0.05" value="0.50">
+        <span id="styleValue">0.50</span>
+      </div>
+
+      <!-- Playback Speed -->
+      <label for="playbackSpeed">Playback Speed (0.5x to 2.0x)</label>
+      <div class="slider-container">
+        <input type="range" id="playbackSpeed" min="0.5" max="2" step="0.1" value="1">
+        <span id="playbackSpeedValue">1</span>
+      </div>
+
+      <!-- Optional Advanced Parameter -->
+      <label for="advancedParam">Advanced Parameter (optional)</label>
+      <input type="text" id="advancedParam" placeholder="Additional parameter if needed" />
+
+      <button type="submit">Generate Audio</button>
+      <button type="button" onclick="previewVoice()">Preview Voice</button>
+    </form>
+
+    <h3>Output Audio</h3>
+    <audio id="ttsAudioPlayer" controls style="width:100%; display:none;"></audio>
+    <p id="ttsDownloadLink"></p>
+  </div>
+
+  <!-- Voice Cloning Section -->
+  <div id="cloneSection" class="section">
+    <h2>Voice Cloning</h2>
+    <form id="cloneForm">
+      <label for="cloneApiKey">API Key</label>
+      <input type="text" id="cloneApiKey" placeholder="Enter your ElevenLabs API key" required 
+             value="sk_20b1a5899d669aed061c48e8242efd55f43abf2445bfd0f3" />
+
+      <label for="cloneVoiceName">New Voice Name</label>
+      <input type="text" id="cloneVoiceName" placeholder="Enter a name for the cloned voice" required />
+
+      <label for="cloneDescription">Voice Description (optional)</label>
+      <textarea id="cloneDescription" rows="3" placeholder="Brief description for the new voice"></textarea>
+
+      <label for="sampleFile">Upload Sample Audio File</label>
+      <input type="file" id="sampleFile" accept="audio/*" required />
+
+      <button type="submit">Clone Voice</button>
+    </form>
+
+    <h3>Clone Output</h3>
+    <p id="cloneOutput"></p>
+  </div>
+
+  <!-- Custom Voice Section -->
+  <div id="customSection" class="section">
+    <h2>Custom Voice</h2>
+    <form id="customForm">
+      <label for="customApiKey">API Key</label>
+      <input type="text" id="customApiKey" placeholder="Enter your ElevenLabs API key" required 
+             value="sk_20b1a5899d669aed061c48e8242efd55f43abf2445bfd0f3" />
+
+      <label for="customVoiceId">Voice ID (Copy from existing voice)</label>
+      <input type="text" id="customVoiceId" placeholder="Enter the copied Voice ID" required />
+
+      <label for="customVoiceName">New Custom Voice Name</label>
+      <input type="text" id="customVoiceName" placeholder="Enter a name for your custom voice" required />
+
+      <button type="submit">Add Custom Voice</button>
+    </form>
+
+    <h3>Custom Voice Output</h3>
+    <p id="customOutput"></p>
+  </div>
+
+  <!-- History Section -->
+  <div id="historySection" class="section">
+    <h2>History</h2>
+    <h3>Generated Voices</h3>
+    <div id="generatedHistoryList">
+      <!-- Generated voices history will be loaded here -->
+    </div>
+    <h3>Custom Voices</h3>
+    <div id="customHistoryList">
+      <!-- Custom voices history will be loaded here -->
+    </div>
+  </div>
+
+  <script>
+    // ----- Section Toggle & Initialization -----
+    function showSection(sectionId) {
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(sectionId).classList.add('active');
+      if(sectionId === 'historySection'){
+        loadHistory();
+      }
+    }
+    
+    // On page load, update TTS dropdown with custom voices
+    window.onload = function() {
+      updateTTSVoiceDropdown();
+    };
+
+    // ----- Update Character Count -----
+    document.getElementById("ttsText").addEventListener("input", function() {
+      document.getElementById("charCount").textContent = this.value.length;
+    });
+    
+    // ----- Slider Updates -----
+    document.getElementById("stability").addEventListener("input", function() {
+      document.getElementById("stabilityValue").textContent = this.value;
+    });
+    document.getElementById("similarityBoost").addEventListener("input", function() {
+      document.getElementById("similarityValue").textContent = this.value;
+    });
+    document.getElementById("style").addEventListener("input", function() {
+      document.getElementById("styleValue").textContent = this.value;
+    });
+    document.getElementById("playbackSpeed").addEventListener("input", function() {
+      document.getElementById("playbackSpeedValue").textContent = this.value;
+    });
+    
+    // ----- TTS Form & Audio Generation -----
+    document.getElementById("ttsForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      generateVoice(false);
+    });
+    
+    function previewVoice() {
+      const previewText = "Voice preview sample.";
+      const textArea = document.getElementById("ttsText");
+      const originalText = textArea.value;
+      textArea.value = previewText;
+      generateVoice(true);
+      textArea.value = originalText;
+    }
+    
+    function generateVoice(isPreview) {
+      const startTime = Date.now();
+      showLoadingPopup();
+      
+      const apiKey = document.getElementById("ttsApiKey").value.trim();
+      const text = document.getElementById("ttsText").value.trim();
+      const voiceSelect = document.getElementById("ttsVoiceSelect");
+      const voiceId = voiceSelect.value;
+      const voiceName = voiceSelect.options[voiceSelect.selectedIndex].text;
+      const modelId = document.getElementById("modelId").value.trim();
+      const stability = parseFloat(document.getElementById("stability").value);
+      const similarityBoost = parseFloat(document.getElementById("similarityBoost").value);
+      const advancedParam = document.getElementById("advancedParam").value.trim();
+    
+      if (!apiKey || !text || !voiceId) {
+        alert("API Key, text, and voice selection are required!");
+        hideLoadingPopup();
+        return;
+      }
+    
+      const url = "https://api.elevenlabs.io/v1/text-to-speech/" + voiceId;
+      const headers = {
+        "Content-Type": "application/json",
+        "xi-api-key": apiKey
+      };
+    
+      const body = {
+        text: text,
+        model_id: modelId,
+        voice_settings: {
+          stability: stability,
+          similarity_boost: similarityBoost
+        }
+      };
+    
+      fetch(url, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(body)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("API request failed with status " + response.status);
+        }
+        return response.blob();
+      })
+      .then(blob => {
+        // Ensure loading popup shows for at least 3 seconds
+        const elapsed = Date.now() - startTime;
+        const remaining = elapsed < 3000 ? 3000 - elapsed : 0;
+        setTimeout(() => {
+          hideLoadingPopup();
+        }, remaining);
+    
+        const audioUrl = URL.createObjectURL(blob);
+        const audioPlayer = document.getElementById("ttsAudioPlayer");
+        audioPlayer.src = audioUrl;
+        audioPlayer.style.display = "block";
+        audioPlayer.playbackRate = parseFloat(document.getElementById("playbackSpeed").value);
+    
+        if (isPreview) {
+          audioPlayer.play().catch(err => console.log("Auto-play failed:", err));
+          document.getElementById("ttsDownloadLink").innerHTML = "";
+        } else {
+          document.getElementById("ttsDownloadLink").innerHTML = `<a href="${audioUrl}" download="voice.mp3">Download Audio</a>`;
+          // Save generated voice history (convert blob to Base64)
+          blobToBase64(blob, function(base64Audio) {
+            saveGeneratedVoice({
+              text: text,
+              voiceId: voiceId,
+              voiceName: voiceName,
+              audioData: base64Audio,
+              timestamp: new Date().toISOString()
+            });
+          });
+        }
+      })
+      .catch(error => {
+        hideLoadingPopup();
+        alert("Error: " + error.message);
+      });
+    }
+    
+    // ----- Loading Popup Functions -----
+    function showLoadingPopup() {
+      document.getElementById("loadingPopup").style.display = "flex";
+    }
+    
+    function hideLoadingPopup() {
+      document.getElementById("loadingPopup").style.display = "none";
+    }
+    
+    // Convert Blob to Base64
+    function blobToBase64(blob, callback) {
+      const reader = new FileReader();
+      reader.onloadend = function() {
+        callback(reader.result);
+      };
+      reader.readAsDataURL(blob);
+    }
+    
+    // Save generated voice to history (using localStorage)
+    function saveGeneratedVoice(entry) {
+      let history = JSON.parse(localStorage.getItem("generatedVoices")) || [];
+      history.push(entry);
+      localStorage.setItem("generatedVoices", JSON.stringify(history));
+    }
+    
+    // ----- Voice Cloning -----
+    document.getElementById("cloneForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      cloneVoice();
+    });
+    
+    function cloneVoice() {
+      const apiKey = document.getElementById("cloneApiKey").value.trim();
+      const voiceName = document.getElementById("cloneVoiceName").value.trim();
+      const voiceDescription = document.getElementById("cloneDescription").value.trim();
+      const sampleFile = document.getElementById("sampleFile").files[0];
+    
+      if (!apiKey || !voiceName || !sampleFile) {
+        alert("API Key, voice name, and sample audio are required!");
+        return;
+      }
+    
+      const url = "https://api.elevenlabs.io/v1/voices/create";
+      let formData = new FormData();
+      formData.append("name", voiceName);
+      if (voiceDescription) {
+        formData.append("description", voiceDescription);
+      }
+      formData.append("files", sampleFile);
+    
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey
+        },
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Voice cloning failed with status " + response.status);
+        }
+        return response.json();
+      })
+      .then(data => {
+        document.getElementById("cloneOutput").innerHTML = "Voice cloned successfully! New Voice ID: " + data.voice_id;
+      })
+      .catch(error => {
+        alert("Error: " + error.message);
+      });
+    }
+    
+    // ----- Custom Voice Addition & Updating Dropdown -----
+    document.getElementById("customForm").addEventListener("submit", function(e) {
+      e.preventDefault();
+      addCustomVoice();
+    });
+    
+    function addCustomVoice() {
+      const apiKey = document.getElementById("customApiKey").value.trim();
+      const customVoiceId = document.getElementById("customVoiceId").value.trim();
+      const customVoiceName = document.getElementById("customVoiceName").value.trim();
+    
+      if (!apiKey || !customVoiceId || !customVoiceName) {
+        alert("API Key, Voice ID, and Voice Name are required!");
+        return;
+      }
+    
+      // Simulate adding a custom voice via API if needed.
+      document.getElementById("customOutput").innerHTML = "Custom voice added successfully! Voice Name: " + customVoiceName + ", using Voice ID: " + customVoiceId;
+      
+      // Save to custom voices history
+      let history = JSON.parse(localStorage.getItem("customVoices")) || [];
+      history.push({ voiceId: customVoiceId, voiceName: customVoiceName });
+      localStorage.setItem("customVoices", JSON.stringify(history));
+      
+      // Update TTS dropdown to include this custom voice
+      updateTTSVoiceDropdown();
+    
+      // Clear form
+      document.getElementById("customForm").reset();
+    }
+    
+    // Append custom voices to TTS dropdown
+    function updateTTSVoiceDropdown() {
+      const dropdown = document.getElementById("ttsVoiceSelect");
+      // First remove any previously added custom options (we tag them with data-custom attribute)
+      Array.from(dropdown.options).forEach(option => {
+        if(option.getAttribute("data-custom") === "true") {
+          dropdown.remove(option.index);
+        }
+      });
+      let history = JSON.parse(localStorage.getItem("customVoices")) || [];
+      history.forEach(item => {
+        let opt = document.createElement("option");
+        opt.value = item.voiceId;
+        opt.text = "Custom: " + item.voiceName;
+        opt.setAttribute("data-custom", "true");
+        dropdown.add(opt);
+      });
+    }
+    
+    // ----- History Section Loading -----
+    function loadHistory() {
+      loadGeneratedHistory();
+      loadCustomHistory();
+    }
+    
+    function loadGeneratedHistory() {
+      const container = document.getElementById("generatedHistoryList");
+      container.innerHTML = "";
+      let history = JSON.parse(localStorage.getItem("generatedVoices")) || [];
+      if(history.length === 0) {
+        container.innerHTML = "<p>No generated voices found.</p>";
+        return;
+      }
+      history.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.innerHTML = `<div>
+                          <strong>${item.voiceName}</strong> (ID: ${item.voiceId})<br>
+                          <em>${item.text}</em><br>
+                          <small>${new Date(item.timestamp).toLocaleString()}</small>
+                         </div>
+                         <div>
+                          <audio controls src="${item.audioData}"></audio>
+                          <br>
+                          <button onclick="removeGeneratedHistory(${index})">Remove</button>
+                         </div>`;
+        container.appendChild(div);
+      });
+    }
+    
+    function loadCustomHistory() {
+      const container = document.getElementById("customHistoryList");
+      container.innerHTML = "";
+      let history = JSON.parse(localStorage.getItem("customVoices")) || [];
+      if(history.length === 0) {
+        container.innerHTML = "<p>No custom voices saved.</p>";
+        return;
+      }
+      history.forEach((item, index) => {
+        const div = document.createElement("div");
+        div.className = "history-item";
+        div.innerHTML = `<span><strong>${item.voiceName}</strong> (ID: ${item.voiceId})</span>
+                         <button onclick="removeCustomHistory(${index})">Remove</button>`;
+        container.appendChild(div);
+      });
+    }
+    
+    // Remove a generated voice history entry
+    function removeGeneratedHistory(index) {
+      let history = JSON.parse(localStorage.getItem("generatedVoices")) || [];
+      history.splice(index, 1);
+      localStorage.setItem("generatedVoices", JSON.stringify(history));
+      loadGeneratedHistory();
+    }
+    
+    // Remove a custom voice history entry and update dropdown
+    function removeCustomHistory(index) {
+      let history = JSON.parse(localStorage.getItem("customVoices")) || [];
+      history.splice(index, 1);
+      localStorage.setItem("customVoices", JSON.stringify(history));
+      loadCustomHistory();
+      updateTTSVoiceDropdown();
+    }
+  </script>
+</body>
+</html>
